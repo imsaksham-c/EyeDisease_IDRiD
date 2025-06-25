@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class ClassificationExpert(nn.Module):
     """
     Expert module for disease classification.
@@ -18,7 +19,7 @@ class ClassificationExpert(nn.Module):
         >>> expert = ClassificationExpert(2048, 5)
         >>> logits = expert(torch.randn(8, 2048, 16, 16))
     """
-    
+
     def __init__(self, feature_dim, num_classes, hidden_dim=256, dropout=0.2):
         """
         Initialize the classification expert.
@@ -30,7 +31,7 @@ class ClassificationExpert(nn.Module):
             dropout (float): Dropout rate.
         """
         super().__init__()
-        
+
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
@@ -40,9 +41,9 @@ class ClassificationExpert(nn.Module):
             nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_dim // 2, num_classes)
+            nn.Linear(hidden_dim // 2, num_classes),
         )
-    
+
     def forward(self, features):
         """
         Forward pass for classification.
@@ -58,6 +59,7 @@ class ClassificationExpert(nn.Module):
         """
         return self.classifier(features)
 
+
 class SegmentationExpert(nn.Module):
     """
     Expert module for lesion segmentation.
@@ -72,7 +74,7 @@ class SegmentationExpert(nn.Module):
         >>> expert = SegmentationExpert(2048)
         >>> mask = expert(torch.randn(8, 2048, 16, 16))
     """
-    
+
     def __init__(self, feature_dim, dropout=0.2):
         """
         Initialize the segmentation expert.
@@ -82,47 +84,39 @@ class SegmentationExpert(nn.Module):
             dropout (float): Dropout rate.
         """
         super().__init__()
-        
+
         # Decoder for segmentation
         self.decoder = nn.Sequential(
             nn.Conv2d(feature_dim, 512, 3, padding=1),
             nn.BatchNorm2d(512),
             nn.ReLU(),
             nn.Dropout2d(dropout),
-            
             nn.ConvTranspose2d(512, 256, 2, stride=2),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            
             nn.Conv2d(256, 256, 3, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.Dropout2d(dropout),
-            
             nn.ConvTranspose2d(256, 128, 2, stride=2),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            
             nn.Conv2d(128, 128, 3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            
             nn.ConvTranspose2d(128, 64, 2, stride=2),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            
             nn.Conv2d(64, 32, 3, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            
             nn.ConvTranspose2d(32, 16, 2, stride=2),
             nn.BatchNorm2d(16),
             nn.ReLU(),
-            
             nn.Conv2d(16, 1, 1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
-    
+
     def forward(self, features):
         """
         Forward pass for segmentation.
@@ -137,6 +131,7 @@ class SegmentationExpert(nn.Module):
             >>> mask = expert(features)
         """
         return self.decoder(features)
+
 
 class GeneralExpert(nn.Module):
     """
@@ -153,7 +148,7 @@ class GeneralExpert(nn.Module):
         >>> expert = GeneralExpert(2048)
         >>> out = expert(torch.randn(8, 2048, 16, 16))
     """
-    
+
     def __init__(self, feature_dim, hidden_dim=256, dropout=0.2):
         """
         Initialize the general expert.
@@ -164,7 +159,7 @@ class GeneralExpert(nn.Module):
             dropout (float): Dropout rate.
         """
         super().__init__()
-        
+
         self.processor = nn.Sequential(
             nn.Conv2d(feature_dim, hidden_dim, 3, padding=1),
             nn.BatchNorm2d(hidden_dim),
@@ -172,9 +167,9 @@ class GeneralExpert(nn.Module):
             nn.Dropout2d(dropout),
             nn.Conv2d(hidden_dim, hidden_dim, 3, padding=1),
             nn.BatchNorm2d(hidden_dim),
-            nn.ReLU()
+            nn.ReLU(),
         )
-    
+
     def forward(self, features):
         """
         Forward pass for general expert.

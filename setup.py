@@ -19,4 +19,4 @@ setup(
     author="Research Team",
     description="Modular Multi-Task Vision System for Eye Disease Diagnosis",
     python_requires=">=3.7",
-) 
+)

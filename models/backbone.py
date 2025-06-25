@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 
+
 class SharedBackbone(nn.Module):
     """
     Shared feature extraction backbone.
@@ -20,8 +21,8 @@ class SharedBackbone(nn.Module):
         >>> backbone = SharedBackbone('resnet50', pretrained=True)
         >>> features = backbone(torch.randn(1, 3, 512, 512))
     """
-    
-    def __init__(self, backbone_name='resnet50', pretrained=True):
+
+    def __init__(self, backbone_name="resnet50", pretrained=True):
         """
         Initialize the shared backbone.
 
@@ -32,18 +33,18 @@ class SharedBackbone(nn.Module):
             ValueError: If an unsupported backbone is specified.
         """
         super().__init__()
-        
-        if backbone_name == 'resnet50':
+
+        if backbone_name == "resnet50":
             backbone = models.resnet50(pretrained=pretrained)
             self.features = nn.Sequential(*list(backbone.children())[:-2])
             self.feature_dim = 2048
-        elif backbone_name == 'resnet34':
+        elif backbone_name == "resnet34":
             backbone = models.resnet34(pretrained=pretrained)
             self.features = nn.Sequential(*list(backbone.children())[:-2])
             self.feature_dim = 512
         else:
             raise ValueError(f"Unsupported backbone: {backbone_name}")
-    
+
     def forward(self, x):
         """
         Forward pass through the backbone.

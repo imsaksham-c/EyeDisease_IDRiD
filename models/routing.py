@@ -2,13 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class DynamicRouter(nn.Module):
     """Dynamic routing mechanism for expert selection."""
-    
+
     def __init__(self, feature_dim, num_experts, hidden_dim=256):
         super().__init__()
         self.num_experts = num_experts
-        
+
         self.router = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
@@ -16,9 +17,9 @@ class DynamicRouter(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(hidden_dim, num_experts),
-            nn.Softmax(dim=1)
+            nn.Softmax(dim=1),
         )
-    
+
     def forward(self, features, task_id=None):
         """
         Args:
@@ -28,7 +29,7 @@ class DynamicRouter(nn.Module):
             routing_weights: Weights for expert selection
         """
         routing_weights = self.router(features)
-        
+
         # Task-specific routing bias (optional)
         if task_id is not None:
             task_bias = torch.zeros_like(routing_weights)
@@ -37,5 +38,5 @@ class DynamicRouter(nn.Module):
             elif task_id == 1:  # Segmentation
                 task_bias[:, 1] += 0.1
             routing_weights = F.softmax(routing_weights + task_bias, dim=1)
-        
-        return routing_weights 
+
+        return routing_weights
