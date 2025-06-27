@@ -8,7 +8,7 @@ from typing import Tuple, List
 @dataclass
 class Config:
     # Data settings
-    data_root: str = "data/"
+    data_root: str = "dataset/"
     image_size: Tuple[int, int] = (512, 512)
     batch_size: int = 16
     num_workers: int = 4

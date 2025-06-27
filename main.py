@@ -62,7 +62,7 @@ def main():
         "--input_path", type=str, default=None, help="Path to input image for inference"
     )
     parser.add_argument(
-        "--data_root", type=str, default="data/", help="Root directory for data"
+        "--data_root", type=str, default="dataset/", help="Root directory for data"
     )
 
     args = parser.parse_args()
