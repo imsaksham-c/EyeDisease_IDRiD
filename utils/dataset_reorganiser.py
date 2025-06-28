@@ -153,7 +153,7 @@ class DatasetReorganizer:
                         'image_path': img_path,
                         'image_id': image_name,
                         'retinopathy_grade': int(row['Retinopathy grade']),
-                        'macular_edema_risk': int(row['Risk of macular edema'])
+                        'macular_edema_risk': int(row['Risk of macular edema '])
                     })
 
         # Load test labels
@@ -168,7 +168,7 @@ class DatasetReorganizer:
                         'image_path': img_path,
                         'image_id': image_name,
                         'retinopathy_grade': int(row['Retinopathy grade']),
-                        'macular_edema_risk': int(row['Risk of macular edema'])
+                        'macular_edema_risk': int(row['Risk of macular edema '])
                     })
 
         return {'train': train_data, 'test': test_data} 

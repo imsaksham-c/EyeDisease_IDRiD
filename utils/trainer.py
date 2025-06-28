@@ -7,7 +7,7 @@ import torch
 import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
-from losses import MultiTaskLoss
+from .losses import MultiTaskLoss
 
 class Trainer:
     """
