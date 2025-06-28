@@ -95,45 +95,51 @@ cd EyeDisease_IDRiD
 
 3. Download and extract the IDRiD dataset to the `dataset/` directory.
 
+## Folder Structure
+
+```
+EyeDisease_IDRiD/
+│
+├── utils/
+│   ├── __init__.py
+│   ├── models.py
+│   ├── trainer.py
+│   ├── data_utils.py
+│   ├── dataset_reorganiser.py
+│   ├── losses.py
+│
+├── train.py
+├── predict.py
+├── requirements.txt
+├── readme.md
+├── dataset/
+│   └── ... (all your data as before)
+└── ...
+```
+
+- All core code modules are in `utils/`.
+- Training and prediction scripts (`train.py`, `predict.py`) are in the project root.
+- Data is in `dataset/`.
+
 ## Usage
 
-### Basic Training and Evaluation
-
+### Install dependencies
 ```bash
-python eye_disease_multitask.py
+pip install -r requirements.txt
 ```
 
-### Configuration
-
-Modify the configuration parameters in the `main()` function in `eye_disease_multitask.py`:
-
-```python
-# Configuration parameters
-DATASET_PATH = "dataset"          # Path to IDRiD dataset
-BATCH_SIZE = 16                   # Batch size for training
-NUM_EPOCHS = 50                   # Number of training epochs
-LEARNING_RATE = 1e-4              # Learning rate
-DEVICE = torch.device('cuda')     # Device for training
+### Train the model
+```bash
+python train.py
 ```
 
-### Custom Training (as a module)
-
-```python
-from eye_disease_multitask import ModularMultiTaskModel, Trainer
-
-# Initialize model
-model = ModularMultiTaskModel(
-    num_classes_classification=5,
-    num_experts=3,
-    hidden_dim=512
-)
-
-# Create trainer
-trainer = Trainer(model, train_loader, val_loader, device, lr=1e-4)
-
-# Train model
-trainer.train(num_epochs=50)
+### Run inference/prediction
+```bash
+python predict.py
 ```
+
+- Edit configuration parameters inside `train.py` and `predict.py` as needed.
+- Ensure the dataset is downloaded and placed in the `dataset/` directory as described above.
 
 ## Model Architecture
 

@@ -1,3 +1,8 @@
+"""
+models.py
+---------
+Defines neural network architectures for multi-task and single-task learning on the IDRiD dataset, including modular and expert-based models for classification and segmentation tasks.
+"""
 import torch
 import torch.nn as nn
 from torchvision.models import resnet50, ResNet50_Weights

@@ -1,3 +1,8 @@
+"""
+train.py
+--------
+Main script to train multi-task and single-task models on the IDRiD dataset. Handles data loading, model initialization, training, and evaluation.
+"""
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -16,6 +21,11 @@ import logging
 from tqdm import tqdm
 import json
 import random
+from utils.models import ExpertModule, GatingNetwork, ModularMultiTaskModel, SingleTaskModel
+from utils.trainer import Trainer
+from utils.evaluator import Evaluator
+from utils.data_utils import EyeDiseaseDataset
+from utils.dataset_reorganiser import reorganized_data
 
 # Set random seeds for reproducibility
 torch.manual_seed(42)
@@ -28,149 +38,7 @@ torch.backends.cudnn.benchmark = False
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class DatasetReorganizer:
-    def __init__(self, dataset_path):
-        self.dataset_path = dataset_path
-        self.seg_train_path = os.path.join(dataset_path, "A. Segmentation/1. Original Images/a. Training Set")
-        self.seg_test_path = os.path.join(dataset_path, "A. Segmentation/1. Original Images/b. Testing Set")
-        self.seg_gt_train_path = os.path.join(dataset_path, "A. Segmentation/2. All Segmentation Groundtruths/a. Training Set")
-        self.seg_gt_test_path = os.path.join(dataset_path, "A. Segmentation/2. All Segmentation Groundtruths/b. Testing Set")
-        self.grade_train_path = os.path.join(dataset_path, "B. Disease Grading/1. Original Images/a. Training Set")
-        self.grade_test_path = os.path.join(dataset_path, "B. Disease Grading/1. Original Images/b. Testing Set")
-        self.grade_labels_path = os.path.join(dataset_path, "B. Disease Grading/2. Groundtruths")
-    
-    def reorganize_data(self):
-        seg_data = self._prepare_segmentation_data()
-        grade_data = self._prepare_grading_data()
-        
-        combined_train_data = []
-        combined_test_data = []
-        
-        # Create mapping from segmentation data
-        seg_train_map = {item['image_id']: item for item in seg_data['train']}
-        seg_test_map = {item['image_id']: item for item in seg_data['test']}
-        
-        # For grading data, create combined entries
-        for item in grade_data['train']:
-            # Normalize image_id to match segmentation naming (always two digits)
-            image_id_num = item['image_id'].replace('IDRiD_', '')
-            image_id = f"IDRiD_{int(image_id_num):02d}"  # e.g., IDRiD_01
-            seg_item = seg_train_map.get(image_id, None)
-            
-            combined_item = {
-                'image_path': item['image_path'],
-                'image_id': image_id,
-                'retinopathy_grade': item['retinopathy_grade'],
-                'macular_edema_risk': item['macular_edema_risk'],
-                'has_segmentation': seg_item is not None,
-                'segmentation_masks': seg_item['masks'] if seg_item else None
-            }
-            combined_train_data.append(combined_item)
-        
-        for item in grade_data['test']:
-            image_id = item['image_id']
-            seg_item = seg_test_map.get(image_id, None)
-            
-            combined_item = {
-                'image_path': item['image_path'],
-                'image_id': image_id,
-                'retinopathy_grade': item['retinopathy_grade'],
-                'macular_edema_risk': item['macular_edema_risk'],
-                'has_segmentation': seg_item is not None,
-                'segmentation_masks': seg_item['masks'] if seg_item else None
-            }
-            combined_test_data.append(combined_item)
-        
-        return {
-            'train': combined_train_data,
-            'test': combined_test_data,
-            'segmentation_only': seg_data
-        }
-    
-    def _prepare_segmentation_data(self):
-        train_data = []
-        test_data = []
-        
-        # Process training data
-        if os.path.exists(self.seg_train_path):
-            for img_file in os.listdir(self.seg_train_path):
-                if img_file.endswith(('.jpg', '.jpeg', '.png')):
-                    image_id = os.path.splitext(img_file)[0]
-                    img_path = os.path.join(self.seg_train_path, img_file)
-                    masks = self._get_segmentation_masks(image_id, self.seg_gt_train_path)
-                    
-                    train_data.append({
-                        'image_path': img_path,
-                        'image_id': image_id,
-                        'masks': masks
-                    })
-        
-        # Process test data
-        if os.path.exists(self.seg_test_path):
-            for img_file in os.listdir(self.seg_test_path):
-                if img_file.endswith(('.jpg', '.jpeg', '.png')):
-                    image_id = os.path.splitext(img_file)[0]
-                    img_path = os.path.join(self.seg_test_path, img_file)
-                    masks = self._get_segmentation_masks(image_id, self.seg_gt_test_path)
-                    
-                    test_data.append({
-                        'image_path': img_path,
-                        'image_id': image_id,
-                        'masks': masks
-                    })
-        
-        return {'train': train_data, 'test': test_data}
-    
-    def _get_segmentation_masks(self, image_id, gt_path):
-        masks = {}
-        mask_types = ['1. Microaneurysms', '2. Haemorrhages', '3. Hard Exudates', 
-                      '4. Soft Exudates', '5. Optic Disc']
-        mask_suffixes = ['_MA.tif', '_HE.tif', '_EX.tif', '_SE.tif', '_OD.tif']
-        
-        for mask_type, suffix in zip(mask_types, mask_suffixes):
-            mask_path = os.path.join(gt_path, mask_type, f"{image_id}{suffix}")
-            if os.path.exists(mask_path):
-                masks[mask_type] = mask_path
-        
-        return masks
-    
-    def _prepare_grading_data(self):
-        train_data = []
-        test_data = []
-        
-        # Load training labels
-        train_labels_path = os.path.join(self.grade_labels_path, "a. IDRiD_Disease Grading_Training Labels.csv")
-        if os.path.exists(train_labels_path):
-            train_df = pd.read_csv(train_labels_path)
-            train_df.columns = train_df.columns.str.strip()  # Strip whitespace from column names
-            for _, row in train_df.iterrows():
-                image_name = row['Image name']
-                img_path = os.path.join(self.grade_train_path, f"{image_name}.jpg")
-                if os.path.exists(img_path):
-                    train_data.append({
-                        'image_path': img_path,
-                        'image_id': image_name,
-                        'retinopathy_grade': int(row['Retinopathy grade']),
-                        'macular_edema_risk': int(row['Risk of macular edema'])
-                    })
-        
-        # Load test labels
-        test_labels_path = os.path.join(self.grade_labels_path, "b. IDRiD_Disease Grading_Testing Labels.csv")
-        if os.path.exists(test_labels_path):
-            test_df = pd.read_csv(test_labels_path)
-            test_df.columns = test_df.columns.str.strip()  # Strip whitespace from column names
-            for _, row in test_df.iterrows():
-                image_name = row['Image name']
-                img_path = os.path.join(self.grade_test_path, f"{image_name}.jpg")
-                if os.path.exists(img_path):
-                    test_data.append({
-                        'image_path': img_path,
-                        'image_id': image_name,
-                        'retinopathy_grade': int(row['Retinopathy grade']),
-                        'macular_edema_risk': int(row['Risk of macular edema'])
-                    })
-        
-        return {'train': train_data, 'test': test_data}
+# This file has been renamed to train.py. All DatasetReorganizer logic is now in dataset_reorganiser.py.
 
 class EyeDiseaseDataset(Dataset):
     def __init__(self, data_list, transform=None, task_type='both'):
@@ -1015,8 +883,7 @@ def main():
     
     # Step 1: Reorganize dataset
     logger.info("Reorganizing dataset...")
-    reorganizer = DatasetReorganizer(DATASET_PATH)
-    reorganized_data = reorganizer.reorganize_data()
+    # The DatasetReorganizer logic is now in dataset_reorganiser.py
     
     # Step 2: Create data transforms
     train_transform, val_transform = create_data_transforms()

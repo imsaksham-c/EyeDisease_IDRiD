@@ -1,3 +1,8 @@
+"""
+losses.py
+---------
+Defines custom loss functions for multi-task and single-task learning, including losses for segmentation and classification tasks.
+"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

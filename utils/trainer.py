@@ -1,3 +1,8 @@
+"""
+trainer.py
+----------
+Implements the training loop and Trainer class for both multi-task and single-task models, handling optimization, validation, and checkpointing.
+"""
 import torch
 import torch.optim as optim
 import numpy as np
