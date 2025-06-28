@@ -1,297 +1,132 @@
-# Modular Vision-Based Multi-task Learning for Eye Disease Diagnosis
+Modular Vision-Based Multi-task Learning for Eye Disease Diagnosis
+1. Project Overview
+This project implements a modular, multi-task deep learning system for diagnosing eye diseases from retinal fundus images, as outlined in the "Computer Vision Research Engineer" assignment. The system is designed to perform two primary tasks simultaneously:
 
-A comprehensive deep learning system for simultaneous eye disease classification and lesion segmentation using the IDRiD dataset.
+Disease Grading Classification: A multi-class classification task to determine the severity of Diabetic Retinopathy (DR) (5 classes, 0-4).
 
----
+Lesion & Landmark Segmentation: A multi-label segmentation task to identify the location of different types of lesions (Microaneurysms, Haemorrhages, Hard Exudates, Soft Exudates) and the Optic Disc.
 
-## How to Run
+The implementation uses PyTorch and follows a modular structure for clarity, maintainability, and extensibility.
 
-**Quickstart:**
+Key Features:
+Multi-Task Architecture: A single, unified model with a shared encoder backbone and task-specific "expert" heads for classification and segmentation.
 
-```bash
-python eye_disease_multitask.py
-```
+Data Preprocessing: A script is provided to unify the disparate dataset sources into a single, cohesive dataset suitable for multi-task training.
 
-This will:
-- Reorganize the dataset automatically (if needed)
-- Train the multi-task model
-- Train single-task baseline models
-- Evaluate all models
-- Generate performance comparison
-- Create visualizations and reports
+Modular Code: The codebase is organized into logical modules for data loading, model architecture, training logic, and utilities.
 
----
+Comprehensive Training and Evaluation: The project includes scripts for training the model, evaluating its performance on both tasks, and generating visual results.
 
-## Overview
+Reproducibility: The project setup includes a requirements.txt file and uses fixed random seeds to ensure reproducibility.
 
-This project implements a modular multi-task learning architecture that efficiently handles both disease grading classification and lesion segmentation from retinal images. The system uses dynamic task-specific routing within a unified vision model to simulate intelligent task-aware learning in medical imaging.
+2. Project Structure
+The project is organized into the following directories and files:
 
-## Features
-
-- **Modular Architecture**: ResNet-50 backbone with specialized expert modules
-- **Dynamic Routing**: Gating networks for intelligent expert selection
-- **Multi-task Learning**: Simultaneous classification and segmentation
-- **Comprehensive Evaluation**: Performance comparison with single-task baselines
-- **Visualization Tools**: Results visualization and training monitoring
-- **Reproducible**: Fixed random seeds and organized code structure
-
-## Requirements
-
-### Dependencies
-
-Install the following Python packages (Python 3.7+ recommended):
-
-```bash
-pip install torch>=1.9.0 torchvision>=0.10.0 numpy>=1.21.0 pandas>=1.3.0 opencv-python>=4.5.0 Pillow>=8.3.0 matplotlib>=3.4.0 scikit-learn>=1.0.0 tqdm>=4.62.0
-```
-
-Or create a `requirements.txt` with the above and run:
-```bash
-pip install -r requirements.txt
-```
-
-### Hardware Requirements
-
-- **GPU**: NVIDIA GPU with CUDA support (recommended)
-- **RAM**: Minimum 8GB, recommended 16GB+
-- **Storage**: At least 5GB free space for dataset and models
-
-## Dataset Structure
-
-The IDRiD dataset should be organized as follows:
-
-```
-dataset/
-├── A. Segmentation/
-│   ├── 1. Original Images/
-│   │   ├── a. Training Set/          # 54 images (IDRiD_01.jpg to IDRiD_54.jpg)
-│   │   └── b. Testing Set/           # 27 images (IDRiD_55.jpg to IDRiD_81.jpg)
-│   └── 2. All Segmentation Groundtruths/
-│       ├── a. Training Set/
-│       │   ├── 1. Microaneurysms/    # *_MA.tif files
-│       │   ├── 2. Haemorrhages/      # *_HE.tif files
-│       │   ├── 3. Hard Exudates/     # *_EX.tif files
-│       │   ├── 4. Soft Exudates/     # *_SE.tif files
-│       │   └── 5. Optic Disc/        # *_OD.tif files
-│       └── b. Testing Set/           # Same structure as training
-└── B. Disease Grading/
-    ├── 1. Original Images/
-    │   ├── a. Training Set/          # 413 images (IDRiD_001.jpg to IDRiD_413.jpg)
-    │   └── b. Testing Set/           # 103 images (IDRiD_001.jpg to IDRiD_103.jpg)
-    └── 2. Groundtruths/
-        ├── a. IDRiD_Disease Grading_Training Labels.csv
-        └── b. IDRiD_Disease Grading_Testing Labels.csv
-```
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd EyeDisease_IDRiD
-```
-
-2. Install dependencies as above.
-
-3. Download and extract the IDRiD dataset to the `dataset/` directory.
-
-## Folder Structure
-
-```
-EyeDisease_IDRiD/
+vision_multi_task_learning/
 │
-├── utils/
+├── data/
+│   └── IDRiD/  # <-- Place the downloaded IDRiD dataset here
+│       ├── A. Segmentation/
+│       └── B. Disease Grading/
+│
+├── preprocessed_data/ # (Auto-generated by preprocess_data.py)
+│   ├── train_images/
+│   ├── test_images/
+│   ├── train_masks/
+│   └── test_masks/
+│   ├── train.csv
+│   └── test.csv
+│
+├── outputs/ # (Auto-generated by train.py)
+│   ├── models/
+│   └── results/
+│
+├── runs/ # (Auto-generated by predict.py)
+│   └── ... (prediction images will be saved here)
+│
+├── src/
 │   ├── __init__.py
-│   ├── models.py
-│   ├── trainer.py
-│   ├── data_utils.py
-│   ├── dataset_reorganiser.py
-│   ├── losses.py
+│   ├── config.py             # Configuration file for hyperparameters and paths
+│   ├── data_loader.py        # PyTorch Dataset and DataLoader
+│   ├── engine.py             # Training and evaluation loops
+│   ├── model.py              # The multi-task model architecture
+│   └── utils.py              # Helper functions (metrics, logging, etc.)
 │
-├── train.py
-├── predict.py
-├── requirements.txt
-├── readme.md
-├── dataset/
-│   └── ... (all your data as before)
-└── ...
-```
+├── preprocess_data.py        # Script to merge and preprocess the raw dataset
+├── train.py                  # Main script to start model training
+├── evaluate.py               # Script to evaluate a trained model
+├── predict.py                # Script to run prediction on a single image
+│
+├── README.md                 # This file
+├── report.md                 # Project report explaining design and results
+└── requirements.txt          # Python dependencies
 
-- All core code modules are in `utils/`.
-- Training and prediction scripts (`train.py`, `predict.py`) are in the project root.
-- Data is in `dataset/`.
+3. Getting Started
+3.1. Prerequisites
+Python 3.8+
 
-## Usage
+PyTorch
 
-### Install dependencies
-```bash
+CUDA-enabled GPU (highly recommended for training)
+
+3.2. Installation
+Clone the repository:
+
+git clone <repository_url>
+cd vision_multi_task_learning
+
+Install the required dependencies:
+
 pip install -r requirements.txt
-```
 
-### Train the model
-```bash
+3.3. Dataset Setup
+Download the IDRiD Dataset: Obtain the dataset from the official IDRiD website.
+
+Organize the Dataset: Unzip and place the dataset into the data/IDRiD directory, maintaining the original structure.
+
+data/
+└── IDRiD/
+    ├── A. Segmentation/
+    └── B. Disease Grading/
+
+Run the Preprocessing Script: This is a mandatory first step. The script unifies the separate segmentation and classification datasets into a single format that the multi-task data loader can use.
+
+python preprocess_data.py
+
+This will create a preprocessed_data directory containing the processed images, combined masks, and two CSV files (train.csv and test.csv).
+
+4. Usage
+4.1. Training the Model
+To start the training process, run the train.py script:
+
 python train.py
-```
 
-### Run inference/prediction
-```bash
-python predict.py
-```
+The script loads configurations from src/config.py.
 
-- Edit configuration parameters inside `train.py` and `predict.py` as needed.
-- Ensure the dataset is downloaded and placed in the `dataset/` directory as described above.
+Training progress, including loss and performance metrics for each task, will be printed to the console.
 
-## Model Architecture
+The best model (based on validation performance) will be saved in the outputs/models/ directory.
 
-### Multi-task Model Components
+A log file with the training history will be saved in the outputs/ directory.
 
-1. **Shared Backbone**: ResNet-50 pretrained on ImageNet
-2. **Expert Modules**: 3 specialized processing units for each task
-3. **Gating Networks**: Dynamic routing mechanism for expert selection
-4. **Task Selector**: Learns to balance between classification and segmentation
+4.2. Evaluating the Model
+To evaluate the trained model on the entire test set, run the evaluate.py script:
 
-### Expert Architecture
+python evaluate.py --model_path outputs/models/best_model.pth
 
-- **Classification Experts**: Fully connected layers with dropout
-- **Segmentation Experts**: Transpose convolutional layers for upsampling
-- **Gating Mechanism**: Softmax-based attention for expert selection
+The script will load the specified model.
 
-## Output Files
+It computes and displays the final performance metrics (Accuracy, Dice Score, IoU) on the test set.
 
-The system generates several output files:
+It saves visual examples of the model's predictions in the outputs/results/ directory.
 
-- `best_model.pth`: Best performing model weights
-- `final_results.json`: Complete evaluation results
-- `training_history.json`: Training loss history
-- `results_visualization.png`: Sample predictions visualization
-- `training_history.png`: Training progress plots
-- `confusion_matrix.png`: Classification confusion matrix
-- `expert_analysis.png`: Expert utilization analysis
+4.3. Making a Single Prediction
+To run inference on a single image file with your trained model, use the predict.py script.
 
-## Performance Metrics
+python predict.py --image /path/to/your/image.jpg
 
-### Classification Metrics
-- **Accuracy**: Overall classification accuracy
-- **Confusion Matrix**: Detailed classification performance
-- **Per-class Precision/Recall**: Class-specific performance
+--image: (Required) The path to the input image you want to test.
 
-### Segmentation Metrics
-- **IoU (Intersection over Union)**: Segmentation overlap metric
-- **Dice Score**: Segmentation similarity metric
-- **Pixel Accuracy**: Per-pixel classification accuracy
+--model_path: (Optional) The path to the trained .pth model file. It defaults to the best_model.pth saved during training.
 
-## Evaluation Results
-
-The system provides comprehensive performance analysis:
-
-1. **Multi-task vs Single-task Comparison**
-2. **Task-specific Performance Metrics**
-3. **Expert Utilization Analysis**
-4. **Training Convergence Analysis**
-5. **Inference Time Profiling**
-
-## Key Features
-
-### Data Preprocessing
-- Automatic dataset reorganization
-- Image resizing and normalization
-- Data augmentation for training
-- Balanced sampling for multi-task learning
-
-### Training Pipeline
-- Combined loss function with task weighting
-- Early stopping with patience
-- Learning rate scheduling
-- Gradient clipping for stability
-
-### Evaluation Framework
-- Comprehensive metrics calculation
-- Visual result generation
-- Performance comparison tools
-- Statistical significance testing
-
-## Troubleshooting
-
-### Common Issues
-
-1. **CUDA Out of Memory**
-   - Reduce batch size
-   - Use gradient checkpointing
-   - Enable mixed precision training
-
-2. **Dataset Loading Errors**
-   - Verify dataset structure
-   - Check file permissions
-   - Ensure all required files are present
-
-3. **Training Instability**
-   - Reduce learning rate
-   - Increase batch size
-   - Check data preprocessing
-
-### Performance Optimization
-
-1. **Memory Optimization**
-   - Use DataLoader with multiple workers
-   - Enable pin_memory for faster GPU transfer
-   - Implement gradient accumulation for large batches
-
-2. **Training Speed**
-   - Use mixed precision training
-   - Enable CUDA optimizations
-   - Optimize data loading pipeline
-
-## Model Interpretation
-
-The system provides several interpretation tools:
-
-1. **Expert Utilization**: Visualization of which experts are used for different inputs
-2. **Task Routing**: Analysis of task-specific routing decisions
-3. **Feature Visualization**: Activation maps and attention visualizations
-4. **Performance Analysis**: Detailed breakdown of model performance
-
-## Extending the System
-
-### Adding New Tasks
-1. Create new expert modules
-2. Implement task-specific loss functions
-3. Update the gating mechanism
-4. Modify the evaluation pipeline
-
-### Modifying Architecture
-1. Change backbone network
-2. Adjust expert module design
-3. Implement new routing strategies
-4. Add regularization techniques
-
-## Citation
-
-If you use this code in your research, please cite:
-
-```bibtex
-@article{multitask_eye_diagnosis,
-  title={Modular Vision-Based Multi-task Learning for Eye Disease Diagnosis},
-  author={Your Name},
-  journal={Your Journal},
-  year={2024}
-}
-```
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- IDRiD dataset creators: Prasanna Porwal, Samiksha Pachade, and Manesh Kokare
-- PyTorch team for the deep learning framework
-- torchvision team for pretrained models
-
-## Contact
-
-For questions or issues, please open an issue on the GitHub repository or contact [your-email@example.com].
-
----
-
-**Note**: This implementation is for research purposes. For clinical applications, please ensure proper validation and regulatory approval.
---- 
+The script will generate an output image showing the original input side-by-side with the predicted segmentation mask overlay. The predicted disease grade and confidence score will be in the title. The output is saved inside the runs/ directory.
